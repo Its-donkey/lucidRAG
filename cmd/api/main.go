@@ -40,7 +40,7 @@ func main() {
 	log.Info("Repositories initialized")
 
 	// Initialize services
-	whatsappClient := whatsapp.NewClient(&cfg.WhatsApp, log)
+	whatsappClient := whatsapp.NewClient(&cfg.WhatsApp, log, messageRepo, sessionRepo)
 	ragService := rag.NewService(&cfg.RAG, log, docRepo)
 	log.Info("Services initialized")
 
