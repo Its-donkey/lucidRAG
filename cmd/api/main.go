@@ -15,20 +15,26 @@ import (
 	whatsappHandler "github.com/elprogramadorgt/lucidRAG/internal/transport/http/v1/whatsapp"
 	"github.com/elprogramadorgt/lucidRAG/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func main() {
-	log := logger.New()
-	log.Info("Starting lucidRAG service...")
-
 	cfg, err := config.Load()
 	if err != nil {
-		log.Error("Failed to load configuration: %v", err)
+		fmt.Fprintf(os.Stderr, "Failed to load configuration: %v\n", err)
 		os.Exit(1)
 	}
 
-	log.Info("Configuration loaded successfully")
-	log.Info("Environment: %s", cfg.Server.Environment)
+	logOpts := logger.Options{
+		Level: "info",
+		JSON:  cfg.Server.Environment == "production",
+	}
+	if cfg.Server.Environment == "development" {
+		logOpts.Level = "debug"
+	}
+
+	log := logger.New(logOpts)
+	log.Info("Starting lucidRAG service", "environment", cfg.Server.Environment)
 
 	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -36,7 +42,6 @@ func main() {
 
 	ctx := context.Background()
 
-	// Build MongoDB connection string from config
 	mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%d/%s",
 		cfg.Database.User,
 		cfg.Database.Password,
@@ -47,36 +52,45 @@ func main() {
 
 	dbClient, err := mongo.NewClient(ctx, mongoURI, cfg.Database.Name)
 	if err != nil {
-		log.Error("Failed to connect to MongoDB: %v", err)
+		log.Error("Failed to connect to MongoDB", "error", err)
 		os.Exit(1)
 	}
-	log.Info("Connected to MongoDB successfully")
+	log.Info("Connected to MongoDB", "host", cfg.Database.Host, "database", cfg.Database.Name)
 
-	// Initialize repositories
 	whatsappRepo := mongo.NewWhatsappRepo(dbClient)
-
-	// Initialize services
 	whatsappSvc := whatsapp.NewService(whatsappRepo)
-
-	// Initialize handlers
 	whatsappHdlr := whatsappHandler.NewHandler(whatsappSvc, cfg.WhatsApp.WebhookVerifyToken)
 
-	// Setup Gin engine
 	engine := gin.New()
 	engine.Use(gin.Recovery())
-	engine.Use(gin.Logger())
+	engine.Use(requestIDMiddleware())
+	engine.Use(loggingMiddleware(log))
 	engine.Use(corsMiddleware())
 
-	// Health check endpoint
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	// API v1 routes
+	engine.GET("/readyz", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
+
+		if err := dbClient.Ping(ctx); err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status":   "error",
+				"database": "disconnected",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "ok",
+			"database": "connected",
+		})
+	})
+
 	v1 := engine.Group("/api/v1")
 	whatsappHandler.Register(v1, whatsappHdlr)
 
-	// Create HTTP server
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
 		Addr:         addr,
@@ -86,38 +100,66 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start server in a goroutine
 	go func() {
-		log.Info("Server listening on %s", addr)
+		log.Info("Server listening", "address", addr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error("Server failed: %v", err)
+			log.Error("Server failed", "error", err)
 			os.Exit(1)
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Info("Shutting down server...")
+	log.Info("Shutting down server")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		log.Error("Server forced to shutdown: %v", err)
+		log.Error("Server forced to shutdown", "error", err)
 		os.Exit(1)
 	}
 
-	log.Info("Server stopped successfully")
+	log.Info("Server stopped")
+}
+
+func requestIDMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		requestID := c.GetHeader("X-Request-ID")
+		if requestID == "" {
+			requestID = uuid.New().String()
+		}
+		c.Set("request_id", requestID)
+		c.Writer.Header().Set("X-Request-ID", requestID)
+		c.Next()
+	}
+}
+
+func loggingMiddleware(log *logger.Logger) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.Request.URL.Path
+
+		c.Next()
+
+		log.Info("request completed",
+			"request_id", c.GetString("request_id"),
+			"method", c.Request.Method,
+			"path", path,
+			"status", c.Writer.Status(),
+			"duration_ms", time.Since(start).Milliseconds(),
+			"client_ip", c.ClientIP(),
+		)
+	}
 }
 
 func corsMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Request-ID")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {

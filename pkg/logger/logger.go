@@ -1,44 +1,75 @@
 package logger
 
 import (
-	"log"
+	"context"
+	"log/slog"
 	"os"
 )
 
-// Logger provides structured logging functionality
 type Logger struct {
-	info  *log.Logger
-	warn  *log.Logger
-	error *log.Logger
-	debug *log.Logger
+	log *slog.Logger
 }
 
-// New creates a new Logger instance
-func New() *Logger {
-	return &Logger{
-		info:  log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile),
-		warn:  log.New(os.Stdout, "WARN: ", log.Ldate|log.Ltime|log.Lshortfile),
-		error: log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile),
-		debug: log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime|log.Lshortfile),
+type Options struct {
+	Level       string
+	JSON        bool
+	AddSource   bool
+}
+
+func New(opts ...Options) *Logger {
+	var opt Options
+	if len(opts) > 0 {
+		opt = opts[0]
 	}
+
+	level := slog.LevelInfo
+	switch opt.Level {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	}
+
+	handlerOpts := &slog.HandlerOptions{
+		Level:     level,
+		AddSource: opt.AddSource,
+	}
+
+	var handler slog.Handler
+	if opt.JSON {
+		handler = slog.NewJSONHandler(os.Stdout, handlerOpts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, handlerOpts)
+	}
+
+	return &Logger{log: slog.New(handler)}
 }
 
-// Info logs an informational message
-func (l *Logger) Info(msg string, args ...interface{}) {
-	l.info.Printf(msg, args...)
+func (l *Logger) Info(msg string, args ...any) {
+	l.log.Info(msg, args...)
 }
 
-// Warn logs a warning message
-func (l *Logger) Warn(msg string, args ...interface{}) {
-	l.warn.Printf(msg, args...)
+func (l *Logger) Warn(msg string, args ...any) {
+	l.log.Warn(msg, args...)
 }
 
-// Error logs an error message
-func (l *Logger) Error(msg string, args ...interface{}) {
-	l.error.Printf(msg, args...)
+func (l *Logger) Error(msg string, args ...any) {
+	l.log.Error(msg, args...)
 }
 
-// Debug logs a debug message
-func (l *Logger) Debug(msg string, args ...interface{}) {
-	l.debug.Printf(msg, args...)
+func (l *Logger) Debug(msg string, args ...any) {
+	l.log.Debug(msg, args...)
+}
+
+func (l *Logger) With(args ...any) *Logger {
+	return &Logger{log: l.log.With(args...)}
+}
+
+func (l *Logger) WithContext(ctx context.Context) *Logger {
+	if requestID, ok := ctx.Value("request_id").(string); ok {
+		return l.With("request_id", requestID)
+	}
+	return l
 }
