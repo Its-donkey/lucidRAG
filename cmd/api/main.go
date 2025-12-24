@@ -9,9 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	docApp "github.com/elprogramadorgt/lucidRAG/internal/application/document"
 	"github.com/elprogramadorgt/lucidRAG/internal/application/whatsapp"
 	"github.com/elprogramadorgt/lucidRAG/internal/config"
 	"github.com/elprogramadorgt/lucidRAG/internal/repository/mongo"
+	"github.com/elprogramadorgt/lucidRAG/internal/transport/http/middleware"
+	documentHandler "github.com/elprogramadorgt/lucidRAG/internal/transport/http/v1/document"
+	ragHandler "github.com/elprogramadorgt/lucidRAG/internal/transport/http/v1/rag"
 	whatsappHandler "github.com/elprogramadorgt/lucidRAG/internal/transport/http/v1/whatsapp"
 	"github.com/elprogramadorgt/lucidRAG/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -57,15 +61,28 @@ func main() {
 	}
 	log.Info("Connected to MongoDB", "host", cfg.Database.Host, "database", cfg.Database.Name)
 
+	// Initialize repositories
 	whatsappRepo := mongo.NewWhatsappRepo(dbClient)
+	documentRepo := mongo.NewDocumentRepo(dbClient)
+
+	// Initialize services
 	whatsappSvc := whatsapp.NewService(whatsappRepo)
+	documentSvc := docApp.NewService(documentRepo)
+
+	// Initialize handlers
 	whatsappHdlr := whatsappHandler.NewHandler(whatsappSvc, cfg.WhatsApp.WebhookVerifyToken, log)
+	documentHdlr := documentHandler.NewHandler(documentSvc, log)
+	ragHdlr := ragHandler.NewHandler(documentSvc, log)
+
+	// Initialize rate limiter (100 requests per minute per IP)
+	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
 
 	engine := gin.New()
 	engine.Use(gin.Recovery())
 	engine.Use(requestIDMiddleware())
 	engine.Use(loggingMiddleware(log))
 	engine.Use(corsMiddleware())
+	engine.Use(middleware.RateLimit(rateLimiter))
 
 	engine.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
@@ -90,6 +107,8 @@ func main() {
 
 	v1 := engine.Group("/api/v1")
 	whatsappHandler.Register(v1, whatsappHdlr)
+	documentHandler.Register(v1, documentHdlr)
+	ragHandler.Register(v1, ragHdlr)
 
 	addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 	server := &http.Server{
