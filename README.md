@@ -8,7 +8,7 @@ lucidRAG follows clean architecture principles with domain-driven design:
 
 - **Backend (Go)**: REST API server with WhatsApp Cloud API integration and RAG capabilities
 - **Frontend (Angular)**: Modern admin dashboard for managing knowledge base and monitoring conversations
-- **Database**: PostgreSQL (configurable) for storing documents, messages, and chat sessions
+- **Database**: MongoDB for storing documents, messages, users, and chat sessions
 
 ## 📁 Project Structure
 
@@ -50,7 +50,7 @@ lucidRAG/
 - Go 1.24 or higher
 - Node.js 20 or higher
 - Docker & Docker Compose (optional)
-- PostgreSQL (if not using Docker)
+- MongoDB (if not using Docker)
 
 ### Quick Start with Docker
 
@@ -74,7 +74,7 @@ docker-compose up -d
 The services will be available at:
 - API: http://localhost:8080
 - Admin UI: http://localhost:4200
-- PostgreSQL: localhost:5432
+- MongoDB: localhost:27017
 
 ### Local Development
 
@@ -146,10 +146,15 @@ Key configuration options in `.env`:
 - `RAG_CHUNK_SIZE`: Document chunk size (default: 512)
 - `RAG_CHUNK_OVERLAP`: Chunk overlap size (default: 50)
 
-**Database Configuration:**
-- `DB_TYPE`: Database type (default: postgres)
+**Authentication Configuration:**
+- `JWT_SECRET`: Secret key for JWT tokens (min 32 characters)
+- `JWT_EXPIRY_HOURS`: Token expiry time in hours (default: 24)
+- `OPENAI_API_KEY`: OpenAI API key for embeddings and chat completion
+
+**Database Configuration (MongoDB):**
+- `DB_TYPE`: Database type (default: mongodb)
 - `DB_HOST`: Database host
-- `DB_PORT`: Database port
+- `DB_PORT`: Database port (default: 27017)
 - `DB_NAME`: Database name
 - `DB_USER`: Database user
 - `DB_PASSWORD`: Database password
@@ -158,21 +163,29 @@ Key configuration options in `.env`:
 
 ### Health Check
 ```
-GET /health
+GET /healthz              (Liveness check)
+GET /readyz               (Readiness check with DB status)
+```
+
+### Authentication API
+```
+POST /api/v1/auth/register   (Register new user)
+POST /api/v1/auth/login      (Login and get JWT token)
+GET  /api/v1/auth/me         (Get current user - requires auth)
 ```
 
 ### WhatsApp Webhook
 ```
-GET  /webhook/whatsapp  (Webhook verification)
-POST /webhook/whatsapp  (Receive webhook events)
+GET  /api/v1/whatsapp/webhook  (Webhook verification)
+POST /api/v1/whatsapp/webhook  (Receive webhook events)
 ```
 
-### RAG API
+### RAG API (requires authentication)
 ```
 POST /api/v1/rag/query   (Query the RAG system)
 ```
 
-### Documents API
+### Documents API (requires admin role)
 ```
 GET    /api/v1/documents           (List documents)
 GET    /api/v1/documents?id={id}   (Get document by ID)
@@ -181,13 +194,21 @@ PUT    /api/v1/documents           (Update document)
 DELETE /api/v1/documents?id={id}   (Delete document)
 ```
 
+### Conversations API (requires admin role)
+```
+GET /api/v1/conversations              (List conversations)
+GET /api/v1/conversations/{id}         (Get conversation by ID)
+GET /api/v1/conversations/{id}/messages (Get conversation messages)
+```
+
 ## 🎨 Frontend Features
 
 The Angular admin UI provides:
 
+- **Authentication**: Login/Register with JWT-based authentication
 - **Dashboard**: Overview of system status and features
 - **Document Management**: Upload, edit, and delete knowledge base documents
-- **RAG Query Interface**: Test RAG responses
+- **Conversation History**: View WhatsApp conversations and RAG responses
 - **Responsive Design**: Works on desktop and mobile devices
 
 ## 🧪 Testing
@@ -288,9 +309,9 @@ For questions or issues, please open an issue on GitHub.
 
 ## 🗺️ Roadmap
 
-- [ ] Implement actual RAG query logic with embeddings
-- [ ] Add user authentication and authorization
-- [ ] Implement conversation history view
+- [x] Implement actual RAG query logic with embeddings
+- [x] Add user authentication and authorization
+- [x] Implement conversation history view
 - [ ] Add support for multiple languages
 - [ ] Implement analytics dashboard
 - [ ] Add file upload for documents (PDF, DOCX, etc.)

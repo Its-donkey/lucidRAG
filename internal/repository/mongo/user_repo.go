@@ -4,53 +4,69 @@ import (
 	"context"
 	"time"
 
-	user "github.com/elprogramadorgt/lucidRAG/internal/domain/user"
-
+	"github.com/elprogramadorgt/lucidRAG/internal/domain/user"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type UserRepo struct {
-	c *DbClient
+	collection *mongo.Collection
 }
 
-func NewUserRepo(c *DbClient) *UserRepo {
-	return &UserRepo{c: c}
+func NewUserRepo(client *DbClient) *UserRepo {
+	return &UserRepo{
+		collection: client.DB.Collection("users"),
+	}
 }
 
-func (r *UserRepo) FindByEmail(
-	ctx context.Context, email string) (*user.User, error) {
+func (r *UserRepo) Create(ctx context.Context, u *user.User) (string, error) {
+	u.CreatedAt = time.Now()
+	u.UpdatedAt = time.Now()
 
-	ctx, cancel := r.c.WithTimeout(ctx)
-	defer cancel()
-	collection := r.c.DB.Collection("users")
-	filter := bson.D{{Key: "email", Value: email}}
+	if u.ID == "" {
+		u.ID = primitive.NewObjectID().Hex()
+	}
 
-	var usr user.User
-	err := collection.FindOne(ctx, filter).Decode(&usr)
+	_, err := r.collection.InsertOne(ctx, u)
+	if err != nil {
+		return "", err
+	}
+
+	return u.ID, nil
+}
+
+func (r *UserRepo) GetByID(ctx context.Context, id string) (*user.User, error) {
+	var u user.User
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&u)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return &usr, nil
+	return &u, nil
 }
 
-func (r *UserRepo) Create(
-	ctx context.Context, usr *user.User) error {
-
-	usr.CreateAt = time.Now()
-	usr.UpdateAt = time.Now()
-	usr.IsActive = true
-
-	ctx, cancel := r.c.WithTimeout(ctx)
-	defer cancel()
-	collection := r.c.DB.Collection("users")
-
-	_, err := collection.InsertOne(ctx, usr)
+func (r *UserRepo) GetByEmail(ctx context.Context, email string) (*user.User, error) {
+	var u user.User
+	err := r.collection.FindOne(ctx, bson.M{"email": email}).Decode(&u)
 	if err != nil {
-		return err
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, err
 	}
-	return nil
+	return &u, nil
+}
+
+func (r *UserRepo) Update(ctx context.Context, u *user.User) error {
+	u.UpdatedAt = time.Now()
+
+	_, err := r.collection.UpdateOne(
+		ctx,
+		bson.M{"_id": u.ID},
+		bson.M{"$set": u},
+	)
+	return err
 }

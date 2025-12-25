@@ -2,40 +2,142 @@ package user
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"time"
 
 	userDomain "github.com/elprogramadorgt/lucidRAG/internal/domain/user"
-	"github.com/sirupsen/logrus"
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	ErrEmailExists        = errors.New("email already exists")
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidToken       = errors.New("invalid token")
+	ErrUserNotFound       = errors.New("user not found")
+)
+
+type jwtClaims struct {
+	UserID string `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
+	jwt.RegisteredClaims
+}
+
 type service struct {
-	repo userDomain.Repository
+	repo      userDomain.Repository
+	jwtSecret []byte
+	jwtExpiry time.Duration
 }
 
-func NewService(repo userDomain.Repository) userDomain.Service {
-	return &service{repo: repo}
+type ServiceConfig struct {
+	Repo      userDomain.Repository
+	JWTSecret string
+	JWTExpiry time.Duration
 }
 
-func (s *service) Register(ctx context.Context, user *userDomain.User) error {
-	emailExists, err := s.repo.FindByEmail(ctx, user.Email)
-	if err != nil {
-		logrus.Errorf("Error checking email existence: %v", err)
-		return err
+func NewService(cfg ServiceConfig) userDomain.Service {
+	expiry := cfg.JWTExpiry
+	if expiry == 0 {
+		expiry = 24 * time.Hour
 	}
-	if emailExists != nil {
-		logrus.Infof("Attempt to register with existing email: %s", user.Email)
-		return fmt.Errorf(userDomain.ErrEmailAlreadyInUse)
+
+	return &service{
+		repo:      cfg.Repo,
+		jwtSecret: []byte(cfg.JWTSecret),
+		jwtExpiry: expiry,
 	}
-	return s.repo.Create(ctx, user)
 }
-func (s *service) Login(ctx context.Context, email, password string) (*userDomain.User, error) {
-	user, err := s.repo.FindByEmail(ctx, email)
+
+func (s *service) Register(ctx context.Context, email, password, name string) (*userDomain.User, error) {
+	existing, _ := s.repo.GetByEmail(ctx, email)
+	if existing != nil {
+		return nil, ErrEmailExists
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
-	// Here you would add logic to compare the hashed password
-	// if user.Password != password {
-	// 	return nil, ErrInvalidCredentials
-	// }
+
+	user := &userDomain.User{
+		Email:        email,
+		PasswordHash: string(hash),
+		Name:         name,
+		Role:         userDomain.RoleUser,
+		IsActive:     true,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	id, err := s.repo.Create(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	user.ID = id
+
 	return user, nil
+}
+
+func (s *service) Login(ctx context.Context, email, password string) (string, error) {
+	user, err := s.repo.GetByEmail(ctx, email)
+	if err != nil || user == nil {
+		return "", ErrInvalidCredentials
+	}
+
+	if !user.IsActive {
+		return "", ErrInvalidCredentials
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return "", ErrInvalidCredentials
+	}
+
+	claims := &jwtClaims{
+		UserID: user.ID,
+		Email:  user.Email,
+		Role:   string(user.Role),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.jwtExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Subject:   user.ID,
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(s.jwtSecret)
+}
+
+func (s *service) GetUser(ctx context.Context, id string) (*userDomain.User, error) {
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+	return user, nil
+}
+
+func (s *service) ValidateToken(tokenString string) (*userDomain.Claims, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &jwtClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, ErrInvalidToken
+		}
+		return s.jwtSecret, nil
+	})
+
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	if claims, ok := token.Claims.(*jwtClaims); ok && token.Valid {
+		return &userDomain.Claims{
+			UserID: claims.UserID,
+			Email:  claims.Email,
+			Role:   claims.Role,
+		}, nil
+	}
+
+	return nil, ErrInvalidToken
 }

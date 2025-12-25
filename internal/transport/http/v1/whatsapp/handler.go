@@ -3,32 +3,157 @@ package whatsapp
 import (
 	"net/http"
 
-	whatsappApp "github.com/elprogramadorgt/lucidRAG/internal/domain/whatsapp"
+	conversationDomain "github.com/elprogramadorgt/lucidRAG/internal/domain/conversation"
+	documentDomain "github.com/elprogramadorgt/lucidRAG/internal/domain/document"
+	whatsappDomain "github.com/elprogramadorgt/lucidRAG/internal/domain/whatsapp"
 	"github.com/elprogramadorgt/lucidRAG/internal/transport/http/v1/whatsapp/dto"
+	"github.com/elprogramadorgt/lucidRAG/pkg/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
-type Handler struct{ svc whatsappApp.Service }
+type Handler struct {
+	svc                whatsappDomain.Service
+	convSvc            conversationDomain.Service
+	docSvc             documentDomain.Service
+	webhookVerifyToken string
+	log                *logger.Logger
+}
 
-func NewHandler(svc whatsappApp.Service) *Handler { return &Handler{svc: svc} }
+type HandlerConfig struct {
+	WhatsAppSvc        whatsappDomain.Service
+	ConversationSvc    conversationDomain.Service
+	DocumentSvc        documentDomain.Service
+	WebhookVerifyToken string
+	Log                *logger.Logger
+}
+
+func NewHandler(cfg HandlerConfig) *Handler {
+	return &Handler{
+		svc:                cfg.WhatsAppSvc,
+		convSvc:            cfg.ConversationSvc,
+		docSvc:             cfg.DocumentSvc,
+		webhookVerifyToken: cfg.WebhookVerifyToken,
+		log:                cfg.Log.With("handler", "whatsapp"),
+	}
+}
 
 func (h *Handler) HandleWebhookVerification(ctx *gin.Context) {
-
 	var request dto.HookRequest
 	if err := ctx.ShouldBindQuery(&request); err != nil {
-		logrus.Error(err)
+		h.log.Error("failed to bind query", "error", err)
 		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Bad Request"})
 		return
-
 	}
 
-	// h.svc.VerifyWebhook(mapToHookInput(req))
-	challenge, err := h.svc.VerifyWebhook(mapToHookInput(request))
+	challenge, err := h.svc.VerifyWebhook(mapToHookInput(request), h.webhookVerifyToken)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		h.log.Warn("webhook verification failed", "error", err)
+		ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, toHookVerificationDTO(challenge))
+}
+
+func (h *Handler) HandleIncomingMessage(ctx *gin.Context) {
+	var payload dto.WebhookPayload
+	if err := ctx.ShouldBindJSON(&payload); err != nil {
+		h.log.Error("failed to parse webhook payload", "error", err)
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": "Bad Request"})
+		return
+	}
+
+	if payload.Object != "whatsapp_business_account" {
+		h.log.Warn("unexpected webhook object type", "object", payload.Object)
+		ctx.JSON(http.StatusOK, gin.H{"status": "ignored"})
+		return
+	}
+
+	for _, entry := range payload.Entry {
+		for _, change := range entry.Changes {
+			for _, msg := range change.Value.Messages {
+				h.processMessage(ctx, msg, change.Value.Contacts)
+			}
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "received"})
+}
+
+func (h *Handler) processMessage(ctx *gin.Context, msg dto.Message, contacts []dto.Contact) {
+	var senderName string
+	for _, c := range contacts {
+		if c.WaID == msg.From {
+			senderName = c.Profile.Name
+			break
+		}
+	}
+
+	h.log.Info("received message",
+		"request_id", ctx.GetString("request_id"),
+		"from", msg.From,
+		"sender_name", senderName,
+		"type", msg.Type,
+		"message_id", msg.ID,
+	)
+
+	if msg.Type != "text" || msg.Text == nil {
+		return
+	}
+
+	content := msg.Text.Body
+
+	if h.convSvc == nil {
+		h.log.Debug("conversation service not configured, skipping message persistence")
+		return
+	}
+
+	savedMsg, err := h.convSvc.SaveIncomingMessage(
+		ctx.Request.Context(),
+		msg.From,
+		senderName,
+		msg.ID,
+		content,
+		msg.Type,
+	)
+	if err != nil {
+		h.log.Error("failed to save incoming message", "error", err)
+		return
+	}
+
+	h.log.Info("message saved", "message_id", savedMsg.ID, "conversation_id", savedMsg.ConversationID)
+
+	if h.docSvc == nil {
+		h.log.Debug("document service not configured, skipping RAG query")
+		return
+	}
+
+	ragQuery := documentDomain.RAGQuery{
+		Query:     content,
+		TopK:      5,
+		Threshold: 0.7,
+	}
+
+	ragResponse, err := h.docSvc.QueryRAG(ctx.Request.Context(), ragQuery)
+	if err != nil {
+		h.log.Error("failed to query RAG", "error", err)
+		return
+	}
+
+	_, err = h.convSvc.SaveOutgoingMessage(
+		ctx.Request.Context(),
+		savedMsg.ConversationID,
+		ragResponse.Answer,
+		ragResponse.Answer,
+	)
+	if err != nil {
+		h.log.Error("failed to save outgoing message", "error", err)
+		return
+	}
+
+	h.log.Info("RAG response saved",
+		"conversation_id", savedMsg.ConversationID,
+		"confidence", ragResponse.ConfidenceScore,
+		"processing_time_ms", ragResponse.ProcessingTimeMs,
+	)
 }
