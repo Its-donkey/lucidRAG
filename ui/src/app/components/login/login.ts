@@ -40,16 +40,15 @@ export class LoginComponent {
         },
         error: (error) => {
           this.isLoading.set(false);
-          this.errorMessage.set(error.error?.message || 'Invalid credentials');
+          this.errorMessage.set(error.error?.error || 'Invalid credentials');
         },
       });
   }
 
-  useDemoCredentials(role: 'admin' | 'moderator' | 'viewer'): void {
+  useDemoCredentials(role: 'admin' | 'user'): void {
     const demoCredentials = {
       admin: { email: 'admin@demo.com', password: 'admin123' },
-      moderator: { email: 'mod@demo.com', password: 'mod123' },
-      viewer: { email: 'viewer@demo.com', password: 'viewer123' },
+      user: { email: 'user@demo.com', password: 'user123' },
     };
 
     this.email.set(demoCredentials[role].email);

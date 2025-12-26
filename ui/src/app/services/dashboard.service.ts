@@ -13,7 +13,8 @@ export class DashboardService {
   constructor(private http: HttpClient) {}
 
   getStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${environment.apiUrl}/dashboard/stats`).pipe(
+    // TODO: Backend endpoint /api/v1/dashboard/stats needs to be implemented
+    return this.http.get<DashboardStats>(`${environment.apiUrl}/v1/dashboard/stats`).pipe(
       tap((stats) => {
         this.stats.set(stats);
       })

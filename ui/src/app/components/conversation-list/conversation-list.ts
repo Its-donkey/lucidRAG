@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConversationService } from '../../services/conversation.service';
+import { Conversation } from '../../models/conversation.model';
 
 @Component({
   selector: 'app-conversation-list',
@@ -10,7 +11,7 @@ import { ConversationService } from '../../services/conversation.service';
   styleUrls: ['./conversation-list.scss'],
 })
 export class ConversationListComponent implements OnInit {
-  conversations = signal<any[]>([]);
+  conversations = signal<Conversation[]>([]);
 
   constructor(public conversationService: ConversationService) {}
 
@@ -21,7 +22,7 @@ export class ConversationListComponent implements OnInit {
     });
   }
 
-  selectConversation(conv: any): void {
+  selectConversation(conv: Conversation): void {
     this.conversationService.selectConversation(conv);
   }
 }

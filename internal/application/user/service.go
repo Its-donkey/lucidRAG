@@ -65,6 +65,7 @@ func (s *service) Register(ctx context.Context, newUser userDomain.User) (*userD
 		PasswordHash: string(hash),
 		FirstName:    newUser.FirstName,
 		LastName:     newUser.LastName,
+		Role:         userDomain.RoleUser,
 		IsActive:     true,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),

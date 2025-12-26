@@ -9,8 +9,8 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly TOKEN_KEY = '';
-  private readonly USER_KEY = '';
+  private readonly TOKEN_KEY = 'lucidrag_auth_token';
+  private readonly USER_KEY = 'lucidrag_user';
 
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
@@ -39,20 +39,22 @@ export class AuthService {
     return localStorage.getItem(this.TOKEN_KEY);
   }
 
-  hasPermission(requiredRole: 'admin' | 'moderator' | 'viewer'): boolean {
+  hasPermission(requiredRole: 'admin' | 'user'): boolean {
     const user = this.currentUser();
     if (!user) return false;
 
-    const roleHierarchy = { admin: 3, moderator: 2, viewer: 1 };
-    return roleHierarchy[user.role] >= roleHierarchy[requiredRole];
+    const roleHierarchy: Record<string, number> = { admin: 2, user: 1 };
+    const userRoleLevel = roleHierarchy[user.role] || 0;
+    const requiredRoleLevel = roleHierarchy[requiredRole] || 0;
+    return userRoleLevel >= requiredRoleLevel;
   }
 
   canReply(): boolean {
-    return this.hasPermission('moderator');
+    return this.hasPermission('user');
   }
 
   canToggleBot(): boolean {
-    return this.hasPermission('moderator');
+    return this.hasPermission('admin');
   }
 
   private setSession(response: LoginResponse): void {

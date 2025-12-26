@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from '../../services/dashboard.service';
+import { DashboardStats } from '../../models/stats.model';
 
 @Component({
   selector: 'app-stats-cards',
@@ -10,7 +11,7 @@ import { DashboardService } from '../../services/dashboard.service';
   styleUrls: ['./stats-cards.scss'],
 })
 export class StatsCardsComponent implements OnInit {
-  stats = signal<any>(null);
+  stats = signal<DashboardStats | null>(null);
 
   constructor(private dashboardService: DashboardService) {}
 
@@ -22,6 +23,8 @@ export class StatsCardsComponent implements OnInit {
           totalConversations: 0,
           activeConversations: 0,
           averageResponseTime: 0,
+          botEnabledCount: 0,
+          platformStats: { whatsapp: 0, instagram: 0, telegram: 0, facebook: 0 },
           todayMessages: 0,
         }),
     });

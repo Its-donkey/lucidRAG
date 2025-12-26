@@ -32,10 +32,8 @@ export class DashboardComponent {
     switch (user.role) {
       case 'admin':
         return 'bg-primary-100 text-primary-700';
-      case 'moderator':
+      case 'user':
         return 'bg-secondary-100 text-secondary-700';
-      case 'viewer':
-        return 'bg-gray-100 text-gray-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }

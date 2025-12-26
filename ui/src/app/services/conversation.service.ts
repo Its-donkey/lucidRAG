@@ -41,7 +41,7 @@ export class ConversationService {
     }
 
     return this.http
-      .get<ConversationsResponse>(`${environment.apiUrl}/conversations`, { params })
+      .get<ConversationsResponse>(`${environment.apiUrl}/v1/conversations`, { params })
       .pipe(
         tap((response) => {
           this.conversations.set(response.conversations);
@@ -56,7 +56,7 @@ export class ConversationService {
     const params = new HttpParams().set('limit', limit.toString());
 
     return this.http
-      .get<MessagesResponse>(`${environment.apiUrl}/conversations/${conversationId}/messages`, {
+      .get<MessagesResponse>(`${environment.apiUrl}/v1/conversations/${conversationId}/messages`, {
         params,
       })
       .pipe(
@@ -69,7 +69,7 @@ export class ConversationService {
   sendReply(conversationId: string, request: SendReplyRequest): Observable<SendReplyResponse> {
     return this.http
       .post<SendReplyResponse>(
-        `${environment.apiUrl}/conversations/${conversationId}/reply`,
+        `${environment.apiUrl}/v1/conversations/${conversationId}/reply`,
         request
       )
       .pipe(
@@ -92,7 +92,7 @@ export class ConversationService {
 
     return this.http
       .post<ToggleBotResponse>(
-        `${environment.apiUrl}/conversations/${conversationId}/toggle-bot`,
+        `${environment.apiUrl}/v1/conversations/${conversationId}/toggle-bot`,
         request
       )
       .pipe(

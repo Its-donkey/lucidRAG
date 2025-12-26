@@ -217,6 +217,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	rateLimiter.Stop()
+
 	if err := dbClient.Close(shutdownCtx); err != nil {
 		log.Error("Failed to close database connection", "error", err)
 	}
@@ -255,9 +257,19 @@ func loggingMiddleware(log *logger.Logger) gin.HandlerFunc {
 }
 
 func corsMiddleware() gin.HandlerFunc {
+	allowedOrigins := map[string]bool{
+		"http://localhost:4200": true,
+		"http://localhost:8080": true,
+	}
+
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		origin := c.Request.Header.Get("Origin")
+
+		if allowedOrigins[origin] {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Request-ID")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
