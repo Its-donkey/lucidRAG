@@ -3,28 +3,25 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { LoginRequest, LoginResponse, User } from '../models/user.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:3000/api'; // Replace with your API URL
-  private readonly TOKEN_KEY = 'auth_token';
-  private readonly USER_KEY = 'current_user';
+  private readonly TOKEN_KEY = '';
+  private readonly USER_KEY = '';
 
   currentUser = signal<User | null>(null);
   isAuthenticated = signal<boolean>(false);
 
-  constructor(
-    private http: HttpClient,
-    private router: Router
-  ) {
+  constructor(private http: HttpClient, private router: Router) {
     this.loadUserFromStorage();
   }
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, credentials).pipe(
-      tap(response => {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/v1/auth/login`, credentials).pipe(
+      tap((response) => {
         this.setSession(response);
       })
     );
@@ -68,7 +65,7 @@ export class AuthService {
   private loadUserFromStorage(): void {
     const token = this.getToken();
     const userJson = localStorage.getItem(this.USER_KEY);
-    
+
     if (token && userJson) {
       try {
         const user = JSON.parse(userJson) as User;

@@ -2,20 +2,19 @@ import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { DashboardStats } from '../models/stats.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DashboardService {
-  private readonly API_URL = 'http://localhost:3000/api'; // Replace with your API URL
-
   stats = signal<DashboardStats | null>(null);
 
   constructor(private http: HttpClient) {}
 
   getStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.API_URL}/dashboard/stats`).pipe(
-      tap(stats => {
+    return this.http.get<DashboardStats>(`${environment.apiUrl}/dashboard/stats`).pipe(
+      tap((stats) => {
         this.stats.set(stats);
       })
     );
