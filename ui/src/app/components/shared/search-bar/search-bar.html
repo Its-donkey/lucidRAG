@@ -1,0 +1,105 @@
+<div class="search-bar">
+  <!-- Search Icon -->
+  <svg
+    class="w-5 h-5 flex-shrink-0"
+    style="color: var(--color-text-tertiary)"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+
+  <!-- Search Input -->
+  <input
+    #searchInput
+    type="text"
+    [value]="searchService.searchQuery()"
+    (input)="onSearch($event)"
+    (keydown)="onKeydown($event)"
+    placeholder="Search conversations..."
+    class="flex-1 text-sm"
+  />
+
+  <!-- Keyboard shortcut hint -->
+  @if (!searchService.searchQuery()) {
+    <div class="hidden sm:flex items-center gap-1">
+      <span class="kbd">/</span>
+    </div>
+  }
+
+  <!-- Clear button -->
+  @if (searchService.searchQuery()) {
+    <button
+      (click)="clearSearch()"
+      class="btn btn-ghost p-1"
+      aria-label="Clear search"
+    >
+      <svg
+        class="w-4 h-4"
+        style="color: var(--color-text-tertiary)"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+    </button>
+  }
+</div>
+
+<!-- Filter chips -->
+<div class="flex items-center gap-2 mt-3">
+  <!-- Unread filter -->
+  <button
+    (click)="searchService.updateFilters({ hasUnread: searchService.filters().hasUnread === true ? undefined : true })"
+    class="badge cursor-pointer transition-all"
+    [class.badge-primary]="searchService.filters().hasUnread === true"
+    [style.background-color]="searchService.filters().hasUnread !== true ? 'var(--color-surface-secondary)' : ''"
+    [style.color]="searchService.filters().hasUnread !== true ? 'var(--color-text-secondary)' : ''"
+  >
+    Unread
+  </button>
+
+  <!-- Status filters -->
+  <button
+    (click)="searchService.updateFilters({ status: searchService.filters().status === 'active' ? undefined : 'active' })"
+    class="badge cursor-pointer transition-all"
+    [class.badge-success]="searchService.filters().status === 'active'"
+    [style.background-color]="searchService.filters().status !== 'active' ? 'var(--color-surface-secondary)' : ''"
+    [style.color]="searchService.filters().status !== 'active' ? 'var(--color-text-secondary)' : ''"
+  >
+    Active
+  </button>
+
+  <button
+    (click)="searchService.updateFilters({ status: searchService.filters().status === 'resolved' ? undefined : 'resolved' })"
+    class="badge cursor-pointer transition-all"
+    [class.badge-secondary]="searchService.filters().status === 'resolved'"
+    [style.background-color]="searchService.filters().status !== 'resolved' ? 'var(--color-surface-secondary)' : ''"
+    [style.color]="searchService.filters().status !== 'resolved' ? 'var(--color-text-secondary)' : ''"
+  >
+    Resolved
+  </button>
+
+  <!-- Clear all filters -->
+  @if (searchService.searchQuery() || searchService.filters().hasUnread || searchService.filters().status) {
+    <button
+      (click)="searchService.clearFilters()"
+      class="text-xs hover:underline"
+      style="color: var(--color-text-tertiary)"
+    >
+      Clear all
+    </button>
+  }
+</div>

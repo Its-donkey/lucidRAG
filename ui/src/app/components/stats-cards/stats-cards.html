@@ -1,24 +1,17 @@
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
   <!-- Total Conversations -->
-  <div class="card card-hover">
+  <div class="stats-card">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-600 mb-1">
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
           Total Conversations
         </p>
-        <p class="text-3xl font-bold text-gray-900">
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
           {{ stats()?.totalConversations || 0 }}
         </p>
       </div>
-      <div
-        class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center"
-      >
-        <svg
-          class="w-6 h-6 text-primary-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+      <div class="stats-card__icon stats-card__icon--primary">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -31,23 +24,18 @@
   </div>
 
   <!-- Active Now -->
-  <div class="card card-hover">
+  <div class="stats-card">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-600 mb-1">Active Now</p>
-        <p class="text-3xl font-bold text-gray-900">
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Active Now
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
           {{ stats()?.activeConversations || 0 }}
         </p>
       </div>
-      <div
-        class="w-12 h-12 bg-success-100 rounded-xl flex items-center justify-center"
-      >
-        <svg
-          class="w-6 h-6 text-success-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+      <div class="stats-card__icon stats-card__icon--success">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -60,23 +48,18 @@
   </div>
 
   <!-- Avg Response Time -->
-  <div class="card card-hover">
+  <div class="stats-card">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-600 mb-1">Avg Response</p>
-        <p class="text-3xl font-bold text-gray-900">
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Avg Response
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
           {{ stats()?.averageResponseTime || 0 }}s
         </p>
       </div>
-      <div
-        class="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center"
-      >
-        <svg
-          class="w-6 h-6 text-secondary-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+      <div class="stats-card__icon stats-card__icon--secondary">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -89,23 +72,18 @@
   </div>
 
   <!-- Today's Messages -->
-  <div class="card card-hover">
+  <div class="stats-card">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm font-medium text-gray-600 mb-1">Today's Messages</p>
-        <p class="text-3xl font-bold text-gray-900">
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Today's Messages
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
           {{ stats()?.todayMessages || 0 }}
         </p>
       </div>
-      <div
-        class="w-12 h-12 bg-warning-100 rounded-xl flex items-center justify-center"
-      >
-        <svg
-          class="w-6 h-6 text-warning-600"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+      <div class="stats-card__icon stats-card__icon--warning">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"

@@ -1,11 +1,18 @@
 <div
-  class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4"
+  class="min-h-screen flex items-center justify-center p-4"
+  style="background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 50%, var(--color-bg-tertiary) 100%)"
 >
+  <!-- Theme Toggle (top-right) -->
+  <div class="fixed top-4 right-4">
+    <app-theme-toggle [compact]="true"></app-theme-toggle>
+  </div>
+
   <div class="w-full max-w-md animate-fade-in">
     <!-- Logo and Title -->
     <div class="text-center mb-8">
       <div
-        class="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-elegant"
+        class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
+        style="background-color: var(--color-primary-600); box-shadow: var(--shadow-lg)"
       >
         <svg
           class="w-8 h-8 text-white"
@@ -21,8 +28,12 @@
           />
         </svg>
       </div>
-      <h1 class="text-3xl font-bold text-gray-900 mb-2">RAG Bot Dashboard</h1>
-      <p class="text-gray-600">Monitor and manage your AI conversations</p>
+      <h1 class="text-3xl font-bold mb-2" style="color: var(--color-text-primary)">
+        lucidRAG
+      </h1>
+      <p style="color: var(--color-text-secondary)">
+        Monitor and manage your AI conversations
+      </p>
     </div>
 
     <!-- Login Card -->
@@ -32,7 +43,8 @@
         <div>
           <label
             for="email"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium mb-2"
+            style="color: var(--color-text-secondary)"
           >
             Email Address
           </label>
@@ -51,7 +63,8 @@
         <div>
           <label
             for="password"
-            class="block text-sm font-medium text-gray-700 mb-2"
+            class="block text-sm font-medium mb-2"
+            style="color: var(--color-text-secondary)"
           >
             Password
           </label>
@@ -68,11 +81,12 @@
 
         <!-- Error Message -->
         @if (errorMessage()) {
-        <div
-          class="bg-danger-50 border border-danger-200 text-danger-700 px-4 py-3 rounded-lg text-sm animate-fade-in"
-        >
-          {{ errorMessage() }}
-        </div>
+          <div
+            class="px-4 py-3 rounded-lg text-sm animate-fade-in"
+            style="background-color: var(--color-danger-50); border: 1px solid var(--color-danger-100); color: var(--color-danger-600)"
+          >
+            {{ errorMessage() }}
+          </div>
         }
 
         <!-- Submit Button -->
@@ -82,43 +96,47 @@
           class="btn btn-primary w-full text-base py-3"
         >
           @if (isLoading()) {
-          <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-            <circle
-              class="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="4"
-            ></circle>
-            <path
-              class="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <span>Signing in...</span>
+            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>Signing in...</span>
           } @else {
-          <span>Sign In</span>
+            <span>Sign In</span>
           }
         </button>
       </form>
 
       <!-- Demo Credentials -->
-      <div class="mt-6 pt-6 border-t border-gray-200">
-        <p class="text-xs text-gray-500 mb-3 text-center">Quick Demo Access:</p>
+      <div class="mt-6 pt-6 border-t" style="border-color: var(--color-border-primary)">
+        <p class="text-xs mb-3 text-center" style="color: var(--color-text-tertiary)">
+          Quick Demo Access:
+        </p>
         <div class="flex gap-2 flex-wrap justify-center">
           <button
             type="button"
             (click)="useDemoCredentials('admin')"
-            class="text-xs px-3 py-1.5 bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors"
+            class="text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style="background-color: var(--color-primary-100); color: var(--color-primary-700)"
           >
             Admin
           </button>
           <button
             type="button"
             (click)="useDemoCredentials('user')"
-            class="text-xs px-3 py-1.5 bg-secondary-50 text-secondary-700 rounded-lg hover:bg-secondary-100 transition-colors"
+            class="text-xs px-3 py-1.5 rounded-lg transition-colors"
+            style="background-color: var(--color-secondary-100); color: var(--color-secondary-700)"
           >
             User
           </button>
@@ -127,7 +145,7 @@
     </div>
 
     <!-- Footer -->
-    <p class="text-center text-sm text-gray-500 mt-6">
+    <p class="text-center text-sm mt-6" style="color: var(--color-text-tertiary)">
       Powered by ElProgramadorGT
     </p>
   </div>

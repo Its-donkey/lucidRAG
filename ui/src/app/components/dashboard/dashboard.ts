@@ -1,41 +1,93 @@
-import { Component } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ThemeService } from '../../services/theme.service';
+import { KeyboardShortcutsService } from '../../services/keyboard-shortcuts.service';
+import { SearchService } from '../../services/search.service';
+import { SidebarComponent } from '../layout/sidebar/sidebar';
+import { ThemeToggleComponent } from '../shared/theme-toggle/theme-toggle';
 import { StatsCardsComponent } from '../stats-cards/stats-cards';
 import { ConversationListComponent } from '../conversation-list/conversation-list';
 import { ConversationDetailComponent } from '../conversation-detail/conversation-detail';
+import { KeyboardShortcutsModalComponent } from '../shared/keyboard-shortcuts-modal/keyboard-shortcuts-modal';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
     CommonModule,
+    SidebarComponent,
+    ThemeToggleComponent,
     StatsCardsComponent,
     ConversationListComponent,
     ConversationDetailComponent,
+    KeyboardShortcutsModalComponent,
   ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],
 })
-export class DashboardComponent {
-  constructor(public authService: AuthService, private router: Router) {}
+export class DashboardComponent implements OnInit {
+  sidebarCollapsed = signal(false);
 
-  logout(): void {
-    this.authService.logout();
+  private shortcutsService = inject(KeyboardShortcutsService);
+  private searchService = inject(SearchService);
+
+  constructor(
+    public authService: AuthService,
+    public themeService: ThemeService
+  ) {}
+
+  ngOnInit(): void {
+    this.registerShortcuts();
   }
 
-  getRoleBadgeColor(): string {
-    const user = this.authService.currentUser();
-    if (!user) return 'bg-gray-100 text-gray-700';
+  private registerShortcuts(): void {
+    // Search shortcut
+    this.shortcutsService.registerShortcut({
+      key: '/',
+      description: 'Focus search',
+      category: 'navigation',
+      action: () => {
+        const searchInput = document.querySelector(
+          '.search-bar input'
+        ) as HTMLInputElement;
+        searchInput?.focus();
+      },
+    });
 
-    switch (user.role) {
-      case 'admin':
-        return 'bg-primary-100 text-primary-700';
-      case 'user':
-        return 'bg-secondary-100 text-secondary-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
+    this.shortcutsService.registerShortcut({
+      key: 'k',
+      modifiers: ['ctrl'],
+      description: 'Open search',
+      category: 'navigation',
+      action: () => {
+        const searchInput = document.querySelector(
+          '.search-bar input'
+        ) as HTMLInputElement;
+        searchInput?.focus();
+      },
+    });
+
+    // Theme toggle
+    this.shortcutsService.registerShortcut({
+      key: 'd',
+      modifiers: ['ctrl'],
+      description: 'Toggle dark mode',
+      category: 'view',
+      action: () => {
+        const currentTheme = this.themeService.resolvedTheme();
+        this.themeService.setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+      },
+    });
+
+    // Clear filters
+    this.shortcutsService.registerShortcut({
+      key: 'Escape',
+      description: 'Clear search/filters',
+      category: 'actions',
+      action: () => {
+        this.searchService.clearFilters();
+      },
+    });
   }
 }
