@@ -1,0 +1,22 @@
+.online-status-indicator {
+  display: inline-flex;
+}
+
+.status-dot {
+  box-shadow: 0 0 0 2px var(--color-surface-primary);
+}
+
+// Pulse animation for online status
+.status-dot[style*="var(--color-success)"] {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

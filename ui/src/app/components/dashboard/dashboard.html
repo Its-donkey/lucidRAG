@@ -1,0 +1,40 @@
+<!-- Keyboard Shortcuts Modal -->
+<app-keyboard-shortcuts-modal></app-keyboard-shortcuts-modal>
+
+<!-- Sidebar -->
+<app-sidebar
+  (collapseChange)="sidebarCollapsed.set($event)"
+  #sidebar
+></app-sidebar>
+
+<!-- Mobile Header -->
+<header class="mobile-header">
+  <button (click)="sidebar.openMobile()" class="btn btn-ghost p-2" aria-label="Open menu">
+    <svg class="w-6 h-6" style="color: var(--color-text-primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+  <h1 class="font-bold" style="color: var(--color-text-primary)">lucidRAG</h1>
+  <app-theme-toggle [compact]="true"></app-theme-toggle>
+</header>
+
+<!-- Main Content -->
+<main class="main-content" [class.main-content--sidebar-collapsed]="sidebarCollapsed()">
+  <!-- Stats Cards -->
+  <div class="mb-6">
+    <app-stats-cards></app-stats-cards>
+  </div>
+
+  <!-- Conversations Layout -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" style="height: calc(100vh - 220px)">
+    <!-- Conversation List (1/3) -->
+    <div class="lg:col-span-1 card overflow-hidden flex flex-col">
+      <app-conversation-list></app-conversation-list>
+    </div>
+
+    <!-- Conversation Detail (2/3) -->
+    <div class="lg:col-span-2 card overflow-hidden flex flex-col">
+      <app-conversation-detail></app-conversation-detail>
+    </div>
+  </div>
+</main>

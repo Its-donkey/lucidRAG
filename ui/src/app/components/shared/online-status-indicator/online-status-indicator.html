@@ -1,0 +1,15 @@
+<div class="online-status-indicator flex items-center gap-1.5">
+  <!-- Status dot -->
+  <span
+    class="status-dot rounded-full flex-shrink-0"
+    [class]="sizeClass()"
+    [style.background-color]="statusColor()"
+  ></span>
+
+  <!-- Optional label -->
+  @if (showLabel) {
+    <span class="text-xs" style="color: var(--color-text-tertiary)">
+      {{ statusLabel() }}
+    </span>
+  }
+</div>

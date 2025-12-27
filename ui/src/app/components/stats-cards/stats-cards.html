@@ -1,0 +1,97 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <!-- Total Conversations -->
+  <div class="stats-card">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Total Conversations
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
+          {{ stats()?.totalConversations || 0 }}
+        </p>
+      </div>
+      <div class="stats-card__icon stats-card__icon--primary">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Now -->
+  <div class="stats-card">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Active Now
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
+          {{ stats()?.activeConversations || 0 }}
+        </p>
+      </div>
+      <div class="stats-card__icon stats-card__icon--success">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avg Response Time -->
+  <div class="stats-card">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Avg Response
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
+          {{ stats()?.averageResponseTime || 0 }}s
+        </p>
+      </div>
+      <div class="stats-card__icon stats-card__icon--secondary">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Messages -->
+  <div class="stats-card">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm font-medium mb-1" style="color: var(--color-text-secondary)">
+          Today's Messages
+        </p>
+        <p class="text-3xl font-bold" style="color: var(--color-text-primary)">
+          {{ stats()?.todayMessages || 0 }}
+        </p>
+      </div>
+      <div class="stats-card__icon stats-card__icon--warning">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+          />
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
